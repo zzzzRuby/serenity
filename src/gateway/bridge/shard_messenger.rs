@@ -71,7 +71,7 @@ impl ShardMessenger {
     /// #         id: ShardId(0),
     /// #         total: 1,
     /// #     };
-    /// #     let mut shard = Shard::new(mutex.clone(), "", shard_info, GatewayIntents::all(), None).await?;
+    /// #     let mut shard = Shard::new(mutex.clone(), None, "", shard_info, GatewayIntents::all(), None).await?;
     /// #
     /// use serenity::model::id::GuildId;
     ///
@@ -98,7 +98,7 @@ impl ShardMessenger {
     /// #         total: 1,
     /// #     };
     /// #
-    /// #     let mut shard = Shard::new(mutex.clone(), "", shard_info, GatewayIntents::all(), None).await?;;
+    /// #     let mut shard = Shard::new(mutex.clone(), None, "", shard_info, GatewayIntents::all(), None).await?;;
     /// #
     /// use serenity::model::id::GuildId;
     ///
@@ -152,7 +152,7 @@ impl ShardMessenger {
     /// #         total: 1,
     /// #     };
     /// #
-    /// #     let mut shard = Shard::new(mutex.clone(), "", shard_info, GatewayIntents::all(), None).await?;
+    /// #     let mut shard = Shard::new(mutex.clone(), None, "", shard_info, GatewayIntents::all(), None).await?;
     /// use serenity::gateway::ActivityData;
     ///
     /// shard.set_activity(Some(ActivityData::playing("Heroes of the Storm")));
@@ -184,7 +184,7 @@ impl ShardMessenger {
     /// #         total: 1,
     /// #     };
     /// #
-    /// #     let mut shard = Shard::new(mutex.clone(), "", shard_info, None).await?;
+    /// #     let mut shard = Shard::new(mutex.clone(), None, "", shard_info, None).await?;
     /// #
     /// use serenity::gateway::ActivityData;
     /// use serenity::model::user::OnlineStatus;
@@ -227,7 +227,7 @@ impl ShardMessenger {
     /// #         total: 1,
     /// #     };
     /// #
-    /// #     let mut shard = Shard::new(mutex.clone(), "", shard_info, GatewayIntents::all(), None).await?;
+    /// #     let mut shard = Shard::new(mutex.clone(), None, "", shard_info, GatewayIntents::all(), None).await?;
     /// #
     /// use serenity::model::user::OnlineStatus;
     ///

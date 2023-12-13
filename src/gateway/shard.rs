@@ -74,6 +74,7 @@ pub struct Shard {
     pub started: Instant,
     pub token: String,
     ws_url: Arc<Mutex<String>>,
+    ws_proxy: Option<String>,
     pub intents: GatewayIntents,
 }
 
@@ -106,7 +107,7 @@ impl Shard {
     ///
     /// // retrieve the gateway response, which contains the URL to connect to
     /// let gateway = Arc::new(Mutex::new(http.get_gateway().await?.url));
-    /// let shard = Shard::new(gateway, &token, shard_info, GatewayIntents::all(), None).await?;
+    /// let shard = Shard::new(gateway, None, &token, shard_info, GatewayIntents::all(), None).await?;
     ///
     /// // at this point, you can create a `loop`, and receive events and match
     /// // their variants
@@ -120,13 +121,14 @@ impl Shard {
     /// TLS error.
     pub async fn new(
         ws_url: Arc<Mutex<String>>,
+        ws_proxy: Option<&str>,
         token: &str,
         shard_info: ShardInfo,
         intents: GatewayIntents,
         presence: Option<PresenceData>,
     ) -> Result<Shard> {
         let url = ws_url.lock().await.clone();
-        let client = connect(&url).await?;
+        let client = connect(&url, ws_proxy).await?;
 
         let presence = presence.unwrap_or_default();
         let last_heartbeat_sent = None;
@@ -152,6 +154,7 @@ impl Shard {
             session_id,
             shard_info,
             ws_url,
+            ws_proxy: ws_proxy.map(|x| x.to_owned()),
             intents,
         })
     }
@@ -608,7 +611,7 @@ impl Shard {
     /// #          total: 1,
     /// #     };
     /// #
-    /// #     let mut shard = Shard::new(mutex.clone(), "", shard_info, GatewayIntents::all(), None).await?;
+    /// #     let mut shard = Shard::new(mutex.clone(), None, "", shard_info, GatewayIntents::all(), None).await?;
     /// #
     /// use serenity::model::id::GuildId;
     ///
@@ -635,7 +638,7 @@ impl Shard {
     /// #          id: ShardId(0),
     /// #          total: 1,
     /// #     };
-    /// #     let mut shard = Shard::new(mutex.clone(), "", shard_info, GatewayIntents::all(), None).await?;
+    /// #     let mut shard = Shard::new(mutex.clone(), None, "", shard_info, GatewayIntents::all(), None).await?;
     /// #
     /// use serenity::model::id::GuildId;
     ///
@@ -703,7 +706,8 @@ impl Shard {
         self.stage = ConnectionStage::Connecting;
         self.started = Instant::now();
         let url = &self.ws_url.lock().await.clone();
-        let client = connect(url).await?;
+        let proxy = self.ws_proxy.as_deref();
+        let client = connect(url, proxy).await?;
         self.stage = ConnectionStage::Handshake;
 
         Ok(client)
@@ -751,7 +755,7 @@ impl Shard {
     }
 }
 
-async fn connect(base_url: &str) -> Result<WsClient> {
+async fn connect(base_url: &str, proxy: Option<&str>) -> Result<WsClient> {
     let url =
         Url::parse(&format!("{base_url}?v={}", constants::GATEWAY_VERSION)).map_err(|why| {
             warn!("Error building gateway URL with base `{}`: {:?}", base_url, why);
@@ -759,5 +763,18 @@ async fn connect(base_url: &str) -> Result<WsClient> {
             Error::Gateway(GatewayError::BuildingUrl)
         })?;
 
-    WsClient::connect(url).await
+    let proxy_url = proxy.map(|proxy| {
+        Url::parse(proxy).map_err(|why| {
+            warn!("Error building proxy URL with base `{}`: {:?}", base_url, why);
+
+            Error::Gateway(GatewayError::BuildingUrl)
+        })
+    });
+
+    let proxy = match proxy_url {
+        Some(result) => Some(result?),
+        None => None,
+    };
+
+    WsClient::connect(url, proxy).await
 }

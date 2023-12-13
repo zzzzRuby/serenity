@@ -74,6 +74,7 @@ pub struct ClientBuilder {
     event_handlers: Vec<Arc<dyn EventHandler>>,
     raw_event_handlers: Vec<Arc<dyn RawEventHandler>>,
     presence: PresenceData,
+    ws_proxy: Option<String>,
 }
 
 #[cfg(feature = "gateway")]
@@ -92,6 +93,7 @@ impl ClientBuilder {
             event_handlers: vec![],
             raw_event_handlers: vec![],
             presence: PresenceData::default(),
+            ws_proxy: None,
         }
     }
 
@@ -320,6 +322,23 @@ impl ClientBuilder {
     pub fn get_presence(&self) -> &PresenceData {
         &self.presence
     }
+
+    /// Sets a http proxy for the websocket connection.
+    pub fn ws_proxy<T: Into<String>>(mut self, proxy: T) -> Self {
+        self.ws_proxy = Some(proxy.into());
+        self
+    }
+
+    /// Remove websocket proxy.
+    pub fn no_ws_proxy(mut self) -> Self {
+        self.ws_proxy = None;
+        self
+    }
+
+    /// Gets the websocket proxy. See [`Self::ws_proxy`] for more info.
+    pub fn get_ws_proxy(&self) -> Option<&str> {
+        self.ws_proxy.as_deref()
+    }
 }
 
 #[cfg(feature = "gateway")]
@@ -337,6 +356,7 @@ impl IntoFuture for ClientBuilder {
         let raw_event_handlers = self.raw_event_handlers;
         let intents = self.intents;
         let presence = self.presence;
+        let ws_proxy = self.ws_proxy;
 
         let mut http = self.http;
 
@@ -381,6 +401,7 @@ impl IntoFuture for ClientBuilder {
                 #[cfg(feature = "voice")]
                 voice_manager: voice_manager.clone(),
                 ws_url: Arc::clone(&ws_url),
+                ws_proxy,
                 #[cfg(feature = "cache")]
                 cache: Arc::clone(&cache),
                 http: Arc::clone(&http),
